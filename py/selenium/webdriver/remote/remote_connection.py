@@ -386,7 +386,8 @@ class RemoteConnection(object):
         :Returns:
           A dictionary with the server's parsed JSON response.
         """
-        LOGGER.debug('%s %s %s' % (method, url, body))
+        if 'screenshot' not in url:
+            LOGGER.debug('%s %s %s' % (method, url, body))
 
         parsed_url = parse.urlparse(url)
         headers = self.get_remote_connection_headers(parsed_url, self.keep_alive)
