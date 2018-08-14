@@ -17,10 +17,16 @@
 
 package org.openqa.grid.internal.utils.configuration;
 
+import static java.util.Optional.ofNullable;
+
+import org.openqa.grid.internal.cli.CommonGridCliOptions;
+import org.openqa.grid.internal.utils.configuration.json.GridJsonConfiguration;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.servlet.Servlet;
 
@@ -61,6 +67,18 @@ public class GridConfiguration extends StandaloneConfiguration {
    */
   GridConfiguration() {
     // defeats instantiation outside of this package
+  }
+
+  public GridConfiguration(GridJsonConfiguration jsonConfig) {
+    super(jsonConfig);
+  }
+
+  void merge(CommonGridCliOptions cliConfig) {
+    super.merge(cliConfig);
+    ofNullable(cliConfig.getCleanUpCycle()).ifPresent(v -> cleanUpCycle = v);
+    ofNullable(cliConfig.getServlets()).ifPresent(v -> servlets = v);
+    ofNullable(cliConfig.getWithoutServlets()).ifPresent(v -> withoutServlets = v);
+    ofNullable(cliConfig.getCustom()).ifPresent(v -> custom = v);
   }
 
   /**

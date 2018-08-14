@@ -15,12 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package org.openqa.selenium.internal;
+package org.openqa.selenium.environment.webserver;
 
-/**
- * @deprecated Use {@link org.openqa.selenium.interactions.internal.Locatable} instead.
- */
-@Deprecated
-public interface Locatable extends org.openqa.selenium.interactions.internal.Locatable {
+public class JreAppServerTest extends AppServerTestBase {
 
+  @Override
+  protected AppServer createAppServer() {
+    return new JreAppServer();
+  }
 }

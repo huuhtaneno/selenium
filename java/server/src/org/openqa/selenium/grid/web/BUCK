@@ -7,9 +7,6 @@ java_library(
         "//java/client/src/org/openqa/selenium/remote:remote",
         "//third_party/java/guava:guava",
     ],
-    provided_deps = [
-        "//third_party/java/servlet:javax.servlet-api",
-    ],
     visibility = [
         "//java/server/...",
     ]

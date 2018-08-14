@@ -123,7 +123,7 @@ public class RegistrationRequestTest {
     assertEquals(true, req.getConfiguration().register);
 
     config = parseCliOptions(
-        "-role", "wd", "-hubHost", "ABC", "-hubPort", "1234","-host","localhost", "-register","false");
+        "-role", "wd", "-hubHost", "ABC", "-hubPort", "1234", "-host","localhost", "-register","false");
     RegistrationRequest req2 = RegistrationRequest.build(config);
     assertEquals(false, req2.getConfiguration().register);
   }
@@ -174,9 +174,9 @@ public class RegistrationRequestTest {
     assertEquals(DesiredCapabilities.operaBlink().getBrowserName(),
                  actualConfig.capabilities.get(0).getBrowserName());
 
-    // make sure this merge protected value was preserved, then remove it for the final assert
+    // make sure this merge protected value was preserved, then reset it for the final assert
     assertEquals("dummyhost", actualConfig.host);
-    actualConfig.host = null;
+    actualConfig.host = "0.0.0.0";
     // make sure this merge protected value was preserved, then reset it for the final assert
     assertEquals(1234, actualConfig.port.intValue());
     actualConfig.port = -1;
@@ -376,6 +376,8 @@ public class RegistrationRequestTest {
   }
 
   private GridNodeConfiguration parseCliOptions(String... args) {
-    return new GridNodeCliOptions.Parser().parse(args).toConfiguration();
+    GridNodeCliOptions opts = new GridNodeCliOptions();
+    opts.parse(args);
+    return new GridNodeConfiguration(opts);
   }
 }

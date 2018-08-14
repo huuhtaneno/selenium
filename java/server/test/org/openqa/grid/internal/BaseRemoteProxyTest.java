@@ -189,6 +189,8 @@ public class BaseRemoteProxyTest {
   }
 
   private GridNodeConfiguration parseCliOptions(String... args) {
-    return new GridNodeCliOptions.Parser().parse(args).toConfiguration();
+    GridNodeCliOptions options = new GridNodeCliOptions();
+    options.parse(args);
+    return new GridNodeConfiguration(options);
   }
 }
