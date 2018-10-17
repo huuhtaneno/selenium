@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import org.openqa.selenium.Beta;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.Point;
 import org.openqa.selenium.Rectangle;
@@ -48,7 +49,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 public class RemoteWebElement implements WebElement, FindsByLinkText, FindsById, FindsByName,
                                          FindsByTagName, FindsByClassName, FindsByCssSelector,
@@ -186,6 +186,9 @@ public class RemoteWebElement implements WebElement, FindsByLinkText, FindsById,
                                 ImmutableMap.of("id", id, "using", using, "value", value));
 
     Object responseValue = response.getValue();
+    if (responseValue == null) { // see https://github.com/SeleniumHQ/selenium/issues/5809
+      throw new NoSuchElementException(String.format("Cannot locate an element using %s=%s", using, value));
+    }
     WebElement element;
     try {
       element = (WebElement) responseValue;
@@ -347,6 +350,7 @@ public class RemoteWebElement implements WebElement, FindsByLinkText, FindsById,
     return new Dimension(width, height);
   }
 
+  @SuppressWarnings({"unchecked"})
   public Rectangle getRect() {
     Response response = execute(DriverCommand.GET_ELEMENT_RECT, ImmutableMap.of("id", id));
     Map<String, Object> rawRect = (Map<String, Object>) response.getValue();

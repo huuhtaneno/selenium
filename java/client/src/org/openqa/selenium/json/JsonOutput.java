@@ -28,6 +28,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayDeque;
 import java.util.Collection;
@@ -35,6 +36,7 @@ import java.util.Date;
 import java.util.Deque;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -126,7 +128,9 @@ public class JsonOutput implements Closeable {
         .put(Date.class::isAssignableFrom, (obj, depth) -> append(String.valueOf(MILLISECONDS.toSeconds(((Date) obj).getTime()))))
         .put(Enum.class::isAssignableFrom, (obj, depth) -> append(asString(obj)))
         .put(File.class::isAssignableFrom, (obj, depth) -> append(((File) obj).getAbsolutePath()))
+        .put(URI.class::isAssignableFrom, (obj, depth) -> append(asString((obj).toString())))
         .put(URL.class::isAssignableFrom, (obj, depth) -> append(asString(((URL) obj).toExternalForm())))
+        .put(UUID.class::isAssignableFrom, (obj, depth) -> append(asString(((UUID) obj).toString())))
         .put(Level.class::isAssignableFrom, (obj, depth) -> append(asString(LogLevelMapping.getName((Level) obj))))
         .put(
             SessionId.class::isAssignableFrom,
@@ -296,11 +300,17 @@ public class JsonOutput implements Closeable {
   }
 
   private Method getMethod(Class<?> clazz, String methodName) {
+    if (Object.class.equals(clazz)) {
+      return null;
+    }
+
     try {
-      Method method = clazz.getMethod(methodName);
+      Method method = clazz.getDeclaredMethod(methodName);
       method.setAccessible(true);
       return method;
-    } catch (NoSuchMethodException | SecurityException e) {
+    } catch (NoSuchMethodException e) {
+      return getMethod(clazz.getSuperclass(), methodName);
+    } catch (SecurityException e) {
       return null;
     }
   }

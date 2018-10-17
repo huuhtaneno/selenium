@@ -1,10 +1,11 @@
-# BUILD FILE SYNTAX: SKYLARK
-
 java_library(
     name = "server",
     srcs = glob(["*.java"]),
     provided_deps = [
         "//third_party/java/servlet:javax.servlet-api",
+    ],
+    exported_deps = [
+        "//java/server/src/org/openqa/selenium/grid/component:component",
     ],
     deps = [
         "//java/client/src/org/openqa/selenium/remote:remote",

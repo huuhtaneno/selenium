@@ -75,6 +75,9 @@ public class GridHubConfiguration extends GridConfiguration {
 
   public String registry;
 
+  private String[] rawArgs;
+  private String configFile;
+
   /**
    * Creates a new configuration using the default values.
    */
@@ -85,18 +88,25 @@ public class GridHubConfiguration extends GridConfiguration {
   public GridHubConfiguration(HubJsonConfiguration jsonConfig) {
     super(jsonConfig);
     role = ROLE;
-    cleanUpCycle = jsonConfig.getCleanUpCycle();
-    newSessionWaitTimeout = jsonConfig.getNewSessionWaitTimeout();
-    throwOnCapabilityNotPresent = jsonConfig.getThrowOnCapabilityNotPresent();
-    registry = jsonConfig.getRegistry();
-    capabilityMatcher = jsonConfig.getCapabilityMatcher();
-    prioritizer = jsonConfig.getPrioritizer();
+    cleanUpCycle = ofNullable(jsonConfig.getCleanUpCycle())
+        .orElse(DEFAULT_CONFIG_FROM_JSON.getCleanUpCycle());
+    newSessionWaitTimeout = ofNullable(jsonConfig.getNewSessionWaitTimeout())
+        .orElse(DEFAULT_CONFIG_FROM_JSON.getNewSessionWaitTimeout());
+    throwOnCapabilityNotPresent = ofNullable(jsonConfig.getThrowOnCapabilityNotPresent())
+        .orElse(DEFAULT_CONFIG_FROM_JSON.getThrowOnCapabilityNotPresent());
+    registry = ofNullable(jsonConfig.getRegistry())
+        .orElse(DEFAULT_CONFIG_FROM_JSON.getRegistry());
+    capabilityMatcher = ofNullable(jsonConfig.getCapabilityMatcher())
+        .orElse(DEFAULT_CONFIG_FROM_JSON.getCapabilityMatcher());
+    prioritizer = ofNullable(jsonConfig.getPrioritizer())
+        .orElse(DEFAULT_CONFIG_FROM_JSON.getPrioritizer());
   }
 
   public GridHubConfiguration(GridHubCliOptions cliConfig) {
     this(ofNullable(cliConfig.getConfigFile()).map(HubJsonConfiguration::loadFromResourceOrFile)
              .orElse(DEFAULT_CONFIG_FROM_JSON));
     super.merge(cliConfig);
+    this.configFile = cliConfig.getConfigFile();
     ofNullable(cliConfig.getNewSessionWaitTimeout()).ifPresent(v -> newSessionWaitTimeout = v);
     ofNullable(cliConfig.getThrowOnCapabilityNotPresent()).ifPresent(v -> throwOnCapabilityNotPresent = v);
     ofNullable(cliConfig.getRegistry()).ifPresent(v -> registry = v);
@@ -190,5 +200,17 @@ public class GridHubConfiguration extends GridConfiguration {
     sb.append(toString(format, "registry", registry));
 
     return sb.toString();
+  }
+
+  public void setRawArgs(String[] rawArgs) {
+    this.rawArgs = rawArgs;
+  }
+
+  public String[] getRawArgs() {
+    return rawArgs;
+  }
+
+  public String getConfigFile() {
+    return configFile;
   }
 }

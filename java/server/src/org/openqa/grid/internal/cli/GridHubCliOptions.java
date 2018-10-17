@@ -17,7 +17,6 @@
 
 package org.openqa.grid.internal.cli;
 
-import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 
 import org.openqa.grid.internal.listeners.Prioritizer;
@@ -25,12 +24,6 @@ import org.openqa.grid.internal.utils.CapabilityMatcher;
 import org.openqa.grid.internal.utils.DefaultCapabilityMatcher;
 
 public class GridHubCliOptions extends CommonGridCliOptions {
-
-  public JCommander parse(String... args) {
-    JCommander commander = JCommander.newBuilder().addObject(this).build();
-    commander.parse(args);
-    return commander;
-  }
 
   /**
    * Hub specific json config file to use. Defaults to {@code null}.
@@ -110,5 +103,4 @@ public class GridHubCliOptions extends CommonGridCliOptions {
   public String getRegistry() {
     return registry;
   }
-
 }

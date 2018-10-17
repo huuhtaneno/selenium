@@ -1,10 +1,6 @@
-# BUILD FILE SYNTAX: SKYLARK
 java_library(name = 'clock',
   srcs = [
-    'Clock.java',
-    'Duration.java',
     'Sleeper.java',
-    'SystemClock.java',
   ],
   deps = [
     '//third_party/java/guava:guava',

@@ -17,14 +17,10 @@
 
 package org.openqa.grid.e2e.misc;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.lessThan;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.base.Function;
@@ -61,7 +57,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -69,61 +64,54 @@ import java.util.concurrent.TimeUnit;
  */
 public class GridViaCommandLineTest {
 
-  private Optional<Stoppable> server;
-  private Optional<Stoppable> node;
+  private Stoppable server = ()->{};
+  private Stoppable node = ()->{};
 
   @After
   public void stopServer() {
-    if (server != null) {
-      server.ifPresent(Stoppable::stop);
-    }
-    if (node != null) {
-      node.ifPresent(Stoppable::stop);
-    }
+    server.stop();
+    node.stop();
   }
 
   @Test
   public void unrecognizedRole() {
     ByteArrayOutputStream outSpy = new ByteArrayOutputStream();
     String[] args = {"-role", "hamlet"};
-    new GridLauncherV3(new PrintStream(outSpy), args).launch();
-    assertThat(outSpy.toString(),
-               startsWith("Error: the role 'hamlet' does not match a recognized server role"));
+    new GridLauncherV3(new PrintStream(outSpy)).launch(args);
+    assertThat(outSpy.toString())
+        .startsWith("Error: the role 'hamlet' does not match a recognized server role");
   }
 
   @Test
   public void canPrintVersion() {
     ByteArrayOutputStream outSpy = new ByteArrayOutputStream();
     String[] args = {"-version"};
-    new GridLauncherV3(new PrintStream(outSpy), args).launch();
-    assertThat(outSpy.toString(), startsWith("Selenium server version: "));
+    new GridLauncherV3(new PrintStream(outSpy)).launch(args);
+    assertThat(outSpy.toString()).startsWith("Selenium server version: ");
   }
 
   @Test
   public void canPrintGeneralHelp() {
     ByteArrayOutputStream outSpy = new ByteArrayOutputStream();
     String[] args = {"-help"};
-    new GridLauncherV3(new PrintStream(outSpy), args).launch();
-    assertThat(outSpy.toString(), startsWith("Usage: <main class> [options]"));
-    assertThat(outSpy.toString(), containsString("-role"));
+    new GridLauncherV3(new PrintStream(outSpy)).launch(args);
+    assertThat(outSpy.toString()).startsWith("Usage: <main class> [options]").contains("-role");
   }
 
   @Test
   public void canPrintHubHelp() {
     ByteArrayOutputStream outSpy = new ByteArrayOutputStream();
     String[] args = {"-role", "hub", "-help"};
-    new GridLauncherV3(new PrintStream(outSpy), args).launch();
-    assertThat(outSpy.toString(), startsWith("Usage: <main class> [options]"));
-    assertThat(outSpy.toString(), containsString("-hubConfig"));
+    new GridLauncherV3(new PrintStream(outSpy)).launch(args);
+    assertThat(outSpy.toString()).startsWith("Usage: <main class> [options]").contains("-hubConfig");
   }
 
   @Test
   public void canPrintNodeHelp() {
     ByteArrayOutputStream outSpy = new ByteArrayOutputStream();
     String[] args = {"-role", "node", "-help"};
-    new GridLauncherV3(new PrintStream(outSpy), args).launch();
-    assertThat(outSpy.toString(), startsWith("Usage: <main class> [options]"));
-    assertThat(outSpy.toString(), containsString("-nodeConfig"));
+    new GridLauncherV3(new PrintStream(outSpy)).launch(args);
+    assertThat(outSpy.toString()).startsWith("Usage: <main class> [options]").contains("-nodeConfig");
   }
 
   @Test
@@ -132,12 +120,12 @@ public class GridViaCommandLineTest {
     Path tempLog = Files.createTempFile("test", ".log");
     String[] args = {"-log", tempLog.toString(), "-port", port.toString()};
 
-    server = new GridLauncherV3(args).launch();
-    assertTrue(server.isPresent());
+    server = new GridLauncherV3().launch(args);
+    assertNotNull(server);
     waitUntilServerIsAvailableOnPort(port);
 
     String log = String.join("", Files.readAllLines(tempLog));
-    assertThat(log, containsString("Selenium Server is up and running on port " + port));
+    assertThat(log).contains("Selenium Server is up and running on port " + port);
   }
 
   @Test
@@ -146,17 +134,17 @@ public class GridViaCommandLineTest {
     ByteArrayOutputStream outSpy = new ByteArrayOutputStream();
     String[] args = {"-role", "standalone", "-port", port.toString()};
 
-    server = new GridLauncherV3(new PrintStream(outSpy), args).launch();
-    assertTrue(server.isPresent());
-    assertThat(server.get(), instanceOf(SeleniumServer.class));
+    server = new GridLauncherV3(new PrintStream(outSpy)).launch(args);
+    assertNotNull(server);
+    assertThat(server).isInstanceOf(SeleniumServer.class);
     waitUntilServerIsAvailableOnPort(port);
 
     String content = getContentOf(port, "/");
-    assertThat(content, containsString("Whoops! The URL specified routes to this help page."));
+    assertThat(content).contains("Whoops! The URL specified routes to this help page.");
 
     String status = getContentOf(port, "/wd/hub/status");
     Map<?, ?> statusMap = new Json().toType(status, Map.class);
-    assertThat(0L, is(statusMap.get("status")));
+    assertThat(statusMap.get("status")).isEqualTo(0L);
   }
 
   @Test
@@ -165,9 +153,9 @@ public class GridViaCommandLineTest {
     ByteArrayOutputStream outSpy = new ByteArrayOutputStream();
     String[] args = {"-port", port.toString()};
 
-    server = new GridLauncherV3(new PrintStream(outSpy), args).launch();
-    assertTrue(server.isPresent());
-    assertThat(server.get(), instanceOf(SeleniumServer.class));
+    server = new GridLauncherV3(new PrintStream(outSpy)).launch(args);
+    assertNotNull(server);
+    assertThat(server).isInstanceOf(SeleniumServer.class);
     waitUntilServerIsAvailableOnPort(port);
   }
 
@@ -177,13 +165,13 @@ public class GridViaCommandLineTest {
     Path tempLog = Files.createTempFile("test", ".log");
     String[] args = {"-debug", "-log", tempLog.toString(), "-port", port.toString()};
 
-    server = new GridLauncherV3(args).launch();
-    assertTrue(server.isPresent());
+    server = new GridLauncherV3().launch(args);
+    assertNotNull(server);
 
     WebDriver driver = new RemoteWebDriver(new URL(String.format("http://localhost:%d/wd/hub", port)),
                                            DesiredCapabilities.htmlUnit());
     driver.quit();
-    assertThat(readAll(tempLog), containsString("DEBUG [WebDriverServlet.handle]"));
+    assertThat(readAll(tempLog)).contains("DEBUG [WebDriverServlet.handle]");
   }
 
   @Test(timeout = 20000L)
@@ -192,8 +180,8 @@ public class GridViaCommandLineTest {
     Path tempLog = Files.createTempFile("test", ".log");
     String[] args = {"-log", tempLog.toString(), "-port", port.toString(), "-timeout", "5"};
 
-    server = new GridLauncherV3(args).launch();
-    assertTrue(server.isPresent());
+    server = new GridLauncherV3().launch(args);
+    assertNotNull(server);
 
     WebDriver driver = new RemoteWebDriver(new URL(String.format("http://localhost:%d/wd/hub", port)),
                                            DesiredCapabilities.htmlUnit());
@@ -201,8 +189,7 @@ public class GridViaCommandLineTest {
     new FluentWait<>(tempLog).withTimeout(Duration.ofSeconds(100))
         .until(file -> readAll(file).contains("Removing session"));
     long end = System.currentTimeMillis();
-    assertThat(end - start, greaterThan(5000L));
-    assertThat(end - start, lessThan(15000L));
+    assertThat(end - start).isBetween(5000L, 15000L);
   }
 
   private String readAll(Path file) {
@@ -218,8 +205,8 @@ public class GridViaCommandLineTest {
     ByteArrayOutputStream outSpy = new ByteArrayOutputStream();
     String[] args = {"-htmlSuite", "*quantum", "http://base.url", "suite.html", "report.html"};
 
-    new GridLauncherV3(new PrintStream(outSpy), args).launch();
-    assertThat(outSpy.toString(), containsString("Download the Selenium HTML Runner"));
+    new GridLauncherV3(new PrintStream(outSpy)).launch(args);
+    assertThat(outSpy.toString()).contains("Download the Selenium HTML Runner");
   }
 
   @Test
@@ -227,17 +214,51 @@ public class GridViaCommandLineTest {
     Integer hubPort = PortProber.findFreePort();
     String[] hubArgs = {"-role", "hub", "-host", "localhost", "-port", hubPort.toString()};
 
-    server = new GridLauncherV3(hubArgs).launch();
+    server = new GridLauncherV3().launch(hubArgs);
     waitUntilServerIsAvailableOnPort(hubPort);
 
     Integer nodePort = PortProber.findFreePort();
     String[] nodeArgs = {"-role", "node", "-host", "localhost", "-hub", "http://localhost:" + hubPort,
                          "-browser", "browserName=htmlunit,maxInstances=1", "-port", nodePort.toString()};
-    node = new GridLauncherV3(nodeArgs).launch();
+    node = new GridLauncherV3().launch(nodeArgs);
     waitUntilServerIsAvailableOnPort(nodePort);
 
     waitForTextOnHubConsole(hubPort, "htmlunit");
     checkPresenceOfElementOnHubConsole(hubPort, By.cssSelector("img[src$='htmlunit.png']"));
+  }
+
+  /*
+    throwOnCapabilityNotPresent is a flag used in the ProxySet. It is configured in the hub,
+    and then passed to the registry, finally to the ProxySet.
+    This test checks that the flag value makes it all the way to the ProxySet. Default is "true".
+   */
+  @Test
+  public void testThrowOnCapabilityNotPresentFlagIsUsed() {
+    Integer hubPort = PortProber.findFreePort();
+    String[] hubArgs = {"-role", "hub", "-host", "localhost", "-port", hubPort.toString(),
+                        "-throwOnCapabilityNotPresent", "true"};
+
+    server = new GridLauncherV3().launch(hubArgs);
+    Hub hub = (Hub) server;
+    assertNotNull("Hub didn't start with given parameters." ,hub);
+
+    assertTrue("throwOnCapabilityNotPresent was false in the Hub and it was passed as true",
+                hub.getConfiguration().throwOnCapabilityNotPresent);
+    assertTrue("throwOnCapabilityNotPresent was false in the ProxySet and it was passed as true",
+                hub.getRegistry().getAllProxies().isThrowOnCapabilityNotPresent());
+
+    // Stopping the hub and starting it with a new throwOnCapabilityNotPresent value
+    hub.stop();
+    hubArgs = new String[]{"-role", "hub", "-host", "localhost", "-port", hubPort.toString(),
+                           "-throwOnCapabilityNotPresent", "false"};
+    server = new GridLauncherV3().launch(hubArgs);
+    hub = (Hub) server;
+    assertNotNull("Hub didn't start with given parameters." ,hub);
+
+    assertFalse("throwOnCapabilityNotPresent was true in the Hub and it was passed as false",
+                hub.getConfiguration().throwOnCapabilityNotPresent);
+    assertFalse("throwOnCapabilityNotPresent was true in the ProxySet and it was passed as false",
+                hub.getRegistry().getAllProxies().isThrowOnCapabilityNotPresent());
   }
 
   @Test
@@ -262,11 +283,11 @@ public class GridViaCommandLineTest {
         + "}", hubPort);
     Files.write(hubConfig, hubJson.getBytes());
     String[] hubArgs = {"-role", "hub",  "-host", "localhost", "-hubConfig", hubConfig.toString()};
-    server = new GridLauncherV3(hubArgs).launch();
+    server = new GridLauncherV3().launch(hubArgs);
     waitUntilServerIsAvailableOnPort(hubPort);
 
-    assertThat(server.get(), instanceOf(Hub.class));
-    GridHubConfiguration realHubConfig = ((Hub) server.get()).getConfiguration();
+    assertThat(server).isInstanceOf(Hub.class);
+    GridHubConfiguration realHubConfig = ((Hub) server).getConfiguration();
     assertEquals(10000, realHubConfig.cleanUpCycle.intValue());
     assertEquals(30000, realHubConfig.browserTimeout.intValue());
     assertEquals(3600, realHubConfig.timeout.intValue());
@@ -274,7 +295,7 @@ public class GridViaCommandLineTest {
     Integer nodePort = PortProber.findFreePort();
     String[] nodeArgs = {"-role", "node", "-host", "localhost", "-hub", "http://localhost:" + hubPort,
                          "-browser", "browserName=htmlunit,maxInstances=1", "-port", nodePort.toString()};
-    node = new GridLauncherV3(nodeArgs).launch();
+    node = new GridLauncherV3().launch(nodeArgs);
     waitUntilServerIsAvailableOnPort(nodePort);
 
     waitForTextOnHubConsole(hubPort, "htmlunit");
@@ -285,7 +306,7 @@ public class GridViaCommandLineTest {
   public void canStartNodeUsingConfigFile() throws Exception {
     Integer hubPort = PortProber.findFreePort();
     String[] hubArgs = {"-role", "hub", "-port", hubPort.toString()};
-    server = new GridLauncherV3(hubArgs).launch();
+    server = new GridLauncherV3().launch(hubArgs);
     waitUntilServerIsAvailableOnPort(hubPort);
 
     Integer nodePort = PortProber.findFreePort();
@@ -311,7 +332,7 @@ public class GridViaCommandLineTest {
         + "}", nodePort, hubPort);
     Files.write(nodeConfig, nodeJson.getBytes());
     String[] nodeArgs = {"-role", "node", "-nodeConfig", nodeConfig.toString() };
-    node = new GridLauncherV3(nodeArgs).launch();
+    node = new GridLauncherV3().launch(nodeArgs);
     waitUntilServerIsAvailableOnPort(nodePort);
 
     waitForTextOnHubConsole(hubPort, "htmlunit");

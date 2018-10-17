@@ -17,11 +17,14 @@
 
 package org.openqa.grid.internal;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.google.gson.Gson;
+
+import com.beust.jcommander.JCommander;
 
 import org.junit.After;
 import org.junit.Before;
@@ -71,7 +74,7 @@ public class BaseRemoteProxyTest {
     assertFalse(p1.equals(p2));
   }
 
-  @Test(expected = GridException.class)
+  @Test
   public void create() {
     Map<String, Object> cap = new HashMap<>();
     cap.put(CapabilityType.APPLICATION_NAME, "corrupted");
@@ -80,7 +83,8 @@ public class BaseRemoteProxyTest {
     config.capabilities.add(new DesiredCapabilities(cap));
     RegistrationRequest request = new RegistrationRequest(config);
 
-    new BaseRemoteProxy(request, registry);
+    assertThatExceptionOfType(GridException.class)
+        .isThrownBy(() -> new BaseRemoteProxy(request, registry));
   }
 
   @Test
@@ -190,7 +194,7 @@ public class BaseRemoteProxyTest {
 
   private GridNodeConfiguration parseCliOptions(String... args) {
     GridNodeCliOptions options = new GridNodeCliOptions();
-    options.parse(args);
+    JCommander.newBuilder().addObject(options).build().parse(args);
     return new GridNodeConfiguration(options);
   }
 }

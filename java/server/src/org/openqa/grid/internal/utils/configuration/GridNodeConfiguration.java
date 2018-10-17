@@ -20,7 +20,6 @@ package org.openqa.grid.internal.utils.configuration;
 import static java.util.Optional.ofNullable;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
 
 import org.openqa.grid.common.RegistrationRequest;
 import org.openqa.grid.common.SeleniumProtocol;
@@ -36,6 +35,7 @@ import org.openqa.selenium.remote.CapabilityType;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -168,23 +168,35 @@ public class GridNodeConfiguration extends GridConfiguration {
   public GridNodeConfiguration(NodeJsonConfiguration jsonConfig) {
     super(jsonConfig);
     role = ROLE;
-    ofNullable(jsonConfig.getCapabilities()).ifPresent(v -> capabilities = new ArrayList<>(v));
-    maxSession = jsonConfig.getMaxSession();
-    register = jsonConfig.getRegister();
-    registerCycle = jsonConfig.getRegisterCycle();
-    nodeStatusCheckTimeout = jsonConfig.getNodeStatusCheckTimeout();
-    nodePolling = jsonConfig.getNodePolling();
-    unregisterIfStillDownAfter = jsonConfig.getUnregisterIfStillDownAfter();
-    downPollingLimit = jsonConfig.getDownPollingLimit();
-    proxy = jsonConfig.getProxy();
+    capabilities = new ArrayList<>(ofNullable(jsonConfig.getCapabilities())
+                                       .orElse(DEFAULT_CONFIG_FROM_JSON.getCapabilities()));
+    maxSession = ofNullable(jsonConfig.getMaxSession())
+        .orElse(DEFAULT_CONFIG_FROM_JSON.getMaxSession());
+    register = ofNullable(jsonConfig.getRegister())
+        .orElse(DEFAULT_CONFIG_FROM_JSON.getRegister());
+    registerCycle = ofNullable(jsonConfig.getRegisterCycle())
+        .orElse(DEFAULT_CONFIG_FROM_JSON.getRegisterCycle());
+    nodeStatusCheckTimeout = ofNullable(jsonConfig.getNodeStatusCheckTimeout())
+        .orElse(DEFAULT_CONFIG_FROM_JSON.getNodeStatusCheckTimeout());
+    nodePolling = ofNullable(jsonConfig.getNodePolling())
+        .orElse(DEFAULT_CONFIG_FROM_JSON.getNodePolling());
+    unregisterIfStillDownAfter = ofNullable(jsonConfig.getUnregisterIfStillDownAfter())
+        .orElse(DEFAULT_CONFIG_FROM_JSON.getUnregisterIfStillDownAfter());
+    downPollingLimit = ofNullable(jsonConfig.getDownPollingLimit())
+        .orElse(DEFAULT_CONFIG_FROM_JSON.getDownPollingLimit());
+    proxy = ofNullable(jsonConfig.getProxy())
+        .orElse(DEFAULT_CONFIG_FROM_JSON.getProxy());
     enablePlatformVerification = jsonConfig.isEnablePlatformVerification();
     if (jsonConfig.getHub() != null) {
       // -hub has precedence
       hub = jsonConfig.getHub();
 
+    } else if (jsonConfig.getHubHost() != null && jsonConfig.getHubPort() != null) {
+      hubHost = ofNullable(jsonConfig.getHubHost()).orElse(DEFAULT_CONFIG_FROM_JSON.getHubHost());
+      hubPort = ofNullable(jsonConfig.getHubPort()).orElse(DEFAULT_CONFIG_FROM_JSON.getHubPort());
+
     } else {
-      hubHost = jsonConfig.getHubHost();
-      hubPort = jsonConfig.getHubPort();
+      hub = DEFAULT_CONFIG_FROM_JSON.getHub();
     }
   }
 
@@ -206,9 +218,10 @@ public class GridNodeConfiguration extends GridConfiguration {
     if (cliConfig.getHub() != null) {
       hub = cliConfig.getHub();
     } else if (cliConfig.getHubHost() != null || cliConfig.getHubPort() != null) {
+      HostPort defaultHubHostPort = getHubHostPort();
       hub = null;
-      ofNullable(cliConfig.getHubHost()).ifPresent(v -> hubHost = v);
-      ofNullable(cliConfig.getHubPort()).ifPresent(v -> hubPort = v);
+      hubHost = ofNullable(cliConfig.getHubHost()).orElse(defaultHubHostPort.host);
+      hubPort = ofNullable(cliConfig.getHubPort()).orElse(defaultHubHostPort.port);
     }
   }
 
@@ -221,19 +234,17 @@ public class GridNodeConfiguration extends GridConfiguration {
   }
 
   private HostPort getHubHostPort() {
-    if (hubHostPort == null) { // parse options
-      // -hub has precedence
-      if (hub != null) {
-        try {
-          URL u = new URL(hub);
-          hubHostPort = new HostPort(u.getHost(), u.getPort());
-        } catch (MalformedURLException mURLe) {
-          throw new RuntimeException("-hub must be a valid url: " + hub, mURLe);
-        }
-      } else if (hubHost != null || hubPort != null) {
-        hubHostPort = new HostPort(ofNullable(hubHost).orElse(DEFAULT_CONFIG_FROM_JSON.getHubHost()),
-                                   ofNullable(hubPort).orElse(DEFAULT_CONFIG_FROM_JSON.getHubPort()));
+    // -hub has precedence
+    if (hub != null) {
+      try {
+        URL u = new URL(hub);
+        hubHostPort = new HostPort(u.getHost(), u.getPort());
+      } catch (MalformedURLException mURLe) {
+        throw new RuntimeException("-hub must be a valid url: " + hub, mURLe);
       }
+    } else if (hubHost != null || hubPort != null) {
+      hubHostPort = new HostPort(ofNullable(hubHost).orElse(DEFAULT_CONFIG_FROM_JSON.getHubHost()),
+                                 ofNullable(hubPort).orElse(DEFAULT_CONFIG_FROM_JSON.getHubPort()));
     }
     return hubHostPort;
   }

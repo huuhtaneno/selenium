@@ -17,10 +17,7 @@
 
 package org.openqa.selenium.testing;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.base.Throwables;
 
@@ -40,7 +37,6 @@ import org.openqa.selenium.environment.GlobalTestEnvironment;
 import org.openqa.selenium.environment.InProcessTestEnvironment;
 import org.openqa.selenium.environment.TestEnvironment;
 import org.openqa.selenium.environment.webserver.AppServer;
-import org.openqa.selenium.WrapsDriver;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.Wait;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -52,7 +48,7 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 @RunWith(SeleniumTestRunner.class)
-public abstract class JUnit4TestBase implements WrapsDriver {
+public abstract class JUnit4TestBase {
 
   private static final Logger logger = Logger.getLogger(JUnit4TestBase.class.getName());
 
@@ -75,7 +71,7 @@ public abstract class JUnit4TestBase implements WrapsDriver {
     String hostName = environment.getAppServer().getHostName();
     String alternateHostName = environment.getAppServer().getAlternateHostName();
 
-    assertThat(hostName, is(not(equalTo(alternateHostName))));
+    assertThat(hostName).isNotEqualTo(alternateHostName);
   }
 
   @Rule
@@ -229,10 +225,6 @@ public abstract class JUnit4TestBase implements WrapsDriver {
     }
   }
 
-  public WebDriver getWrappedDriver() {
-    return storedDriver.get();
-  }
-
   private void createDriver() {
     driver = actuallyCreateDriver();
     wait = new WebDriverWait(driver, 10);
@@ -268,11 +260,6 @@ public abstract class JUnit4TestBase implements WrapsDriver {
     }
 
     storedDriver.remove();
-  }
-
-  protected boolean isIeDriverTimedOutException(IllegalStateException e) {
-    // The IE driver may throw a timed out exception
-    return e.getClass().getName().contains("TimedOutException");
   }
 
   private static boolean matches(Browser browser, Driver[] drivers) {

@@ -93,6 +93,7 @@ public class Hub implements Stoppable {
     try {
       registry = (GridRegistry) Class.forName(config.registry).newInstance();
       registry.setHub(this);
+      registry.setThrowOnCapabilityNotPresent(config.throwOnCapabilityNotPresent);
     } catch (Throwable e) {
       throw new GridConfigurationException("Error creating class with " + config.registry +
                                            " : " + e.getMessage(), e);
@@ -238,7 +239,7 @@ public class Hub implements Stoppable {
     return json.toType(json.toJson(config.toJson()), Map.class);
   }
 
-  public void start() throws Exception {
+  public void start() {
     initServer();
 
     try {

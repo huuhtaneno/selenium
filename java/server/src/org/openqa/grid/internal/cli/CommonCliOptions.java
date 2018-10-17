@@ -88,7 +88,7 @@ public abstract class CommonCliOptions {
    */
   @Parameter(
       names = {"-timeout", "-sessionTimeout"},
-      description = "<Integer> in seconds : Specifies the timeout before the server automatically kills a session that hasn't had any activity in the last X seconds. The test slot will then be released for another test to use. This is typically used to take care of client crashes. For grid hub/node roles, cleanUpCycle must also be set."
+      description = "<Integer> in seconds : Specifies the timeout before the server automatically kills a session that hasn't had any activity in the last X seconds. The test slot will then be released for another test to use. This is typically used to take care of client crashes. For grid hub/node roles, cleanUpCycle must also be set. If a node does not specify it, the hub value will be used."
   )
   private Integer timeout;
 
@@ -97,17 +97,9 @@ public abstract class CommonCliOptions {
    */
   @Parameter(
       names = "-browserTimeout",
-      description = "<Integer> in seconds : number of seconds a browser session is allowed to hang while a WebDriver command is running (example: driver.get(url)). If the timeout is reached while a WebDriver command is still processing, the session will quit. Minimum value is 60. An unspecified, zero, or negative value means wait indefinitely."
+      description = "<Integer> in seconds : number of seconds a browser session is allowed to hang while a WebDriver command is running (example: driver.get(url)). If the timeout is reached while a WebDriver command is still processing, the session will quit. Minimum value is 60. An unspecified, zero, or negative value means wait indefinitely. If a node does not specify it, the hub value will be used."
   )
   private Integer browserTimeout;
-
-  @Parameter(
-      names = {"-avoidProxy"},
-      description = "DO NOT USE: Hack to allow selenium 3.0 server run in SauceLabs",
-      hidden = true
-  )
-  // initially defaults to false from boolean primitive type
-  private Boolean avoidProxy;
 
   /**
    *   Max threads for Jetty. Defaults to {@code null}.
@@ -117,22 +109,6 @@ public abstract class CommonCliOptions {
       description = "<Integer> : max number of threads for Jetty. An unspecified, zero, or negative value means the Jetty default value (200) will be used."
   )
   private Integer jettyMaxThreads;
-
-  @Parameter(
-      names = "-browserSideLog",
-      description = "DO NOT USE: Provided for compatibility with 2.0",
-      hidden = true
-  )
-  // initially defaults to false from boolean primitive type
-  private Boolean browserSideLog = false;
-
-  @Parameter(
-      names = "-captureLogsOnQuit",
-      description = "DO NOT USE: Provided for compatibility with 2.0",
-      hidden = true
-  )
-  // initially defaults to false from boolean primitive type
-  private Boolean captureLogsOnQuit = false;
 
   public Boolean getVersion() {
     return version;

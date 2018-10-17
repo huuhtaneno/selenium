@@ -17,18 +17,12 @@
 
 package org.openqa.selenium.grid.server;
 
-import org.openqa.selenium.UnsupportedCommandException;
 import org.openqa.selenium.grid.web.CommandHandler;
-import org.openqa.selenium.grid.web.ErrorHandler;
-import org.openqa.selenium.injector.Injector;
 import org.openqa.selenium.remote.http.HttpRequest;
 import org.openqa.selenium.remote.http.HttpResponse;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Objects;
-import java.util.function.BiFunction;
-import java.util.function.Predicate;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -36,15 +30,10 @@ import javax.servlet.http.HttpServletResponse;
 
 class CommandHandlerServlet extends HttpServlet {
 
-  private final Map<Predicate<HttpRequest>, BiFunction<Injector, HttpRequest, CommandHandler>>
-      handlers;
-  private final Injector injector;
+  private final CommandHandler handler;
 
-  public CommandHandlerServlet(
-      Injector injector,
-      Map<Predicate<HttpRequest>, BiFunction<Injector, HttpRequest, CommandHandler>> handlers) {
-    this.injector = Objects.requireNonNull(injector);
-    this.handlers = Objects.requireNonNull(handlers);
+  public CommandHandlerServlet(CommandHandler handler) {
+    this.handler = Objects.requireNonNull(handler);
   }
 
   @Override
@@ -53,21 +42,6 @@ class CommandHandlerServlet extends HttpServlet {
     HttpRequest request = new ServletRequestWrappingHttpRequest(req);
     HttpResponse response = new ServletResponseWrappingHttpResponse(resp);
 
-    handlers.entrySet().stream()
-        .filter(entry -> entry.getKey().test(request))
-        .map(Map.Entry::getValue)
-        .findFirst()
-        .orElseGet(() -> (i, r) -> {
-          Injector child = Injector.builder()
-              .parent(i)
-              .register(new UnsupportedCommandException(
-                  String.format("Unable to find command matching (%s) %s",
-                                r.getMethod(),
-                                r.getUri())))
-              .build();
-          return child.newInstance(ErrorHandler.class);
-        })
-        .apply(injector, request)
-        .execute(request, response);
+    handler.execute(request, response);
   }
 }

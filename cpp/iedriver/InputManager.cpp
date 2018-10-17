@@ -39,6 +39,7 @@
 #define USER_INTERACTION_MUTEX_NAME L"WebDriverUserInteractionMutex"
 #define WAIT_TIME_IN_MILLISECONDS_PER_INPUT_EVENT 100
 #define MOVE_ERROR_TEMPLATE "The requested mouse movement to (%d, %d) would be outside the bounds of the current view port (left: %d, right: %d, top: %d, bottom: %d)"
+#define MOVE_OVERFLOW_ERROR_TEMPLATE "The requested ending %s (%lld) would be outside the legal bounds (less than -2147483648 or greater than 2147483647"
 
 #define MODIFIER_KEY_SHIFT 1
 #define MODIFIER_KEY_CTRL 2
@@ -194,15 +195,21 @@ int InputManager::GetTicks(const Json::Value& sequences, Json::Value* ticks) {
       }
       Json::UInt action_index = static_cast<Json::UInt>(j);
       Json::Value action = actions[action_index];
-      if (device_type == "key" &&
-          action.isMember("type") &&
+      if (action.isMember("type") &&
           action["type"].isString() &&
           action["type"].asString() == "pause") {
-        // HACK! Ignore the duration of pause events in keyboard action
-        // sequences. This is deliberately in violation of the W3C spec.
-        // This allows us to better synchronize mixed keyboard and mouse
-        // action sequences.
-        action["duration"] = 0;
+        if (action.isMember("duration") &&
+            (action["duration"].type() != Json::ValueType::intValue ||
+            action["duration"].asInt() < 0)) {
+          return EINVALIDARGUMENT;
+        }
+        if (device_type == "key") {
+          // HACK! Ignore the duration of pause events in keyboard action
+          // sequences. This is deliberately in violation of the W3C spec.
+          // This allows us to better synchronize mixed keyboard and mouse
+          // action sequences.
+          action["duration"] = 0;
+        }
       }
       (*ticks)[action_index].append(action);
     }
@@ -325,12 +332,12 @@ int InputManager::PointerMoveTo(BrowserHandle browser_wrapper,
     }
   }
 
-  int x_offset = 0;
+  long x_offset = 0;
   if (move_to_action.isMember("x") && move_to_action["x"].isInt()) {
     x_offset = move_to_action["x"].asInt();
   }
 
-  int y_offset = 0;
+  long y_offset = 0;
   if (move_to_action.isMember("y") && move_to_action["y"].isInt()) {
     y_offset = move_to_action["y"].asInt();
   }
@@ -413,10 +420,27 @@ int InputManager::PointerMoveTo(BrowserHandle browser_wrapper,
       end_y = y_offset;
     } else {
       if (offset_specified) {
-        // An offset was specified. At this point, the end coordinates should be
-        // set to either (1) the previous mouse position if there was no element
-        // specified, or (2) the origin of the element from which to calculate the
-        // offset.
+        // An offset was specified. At this point, the end coordinates should
+        // be set to either (1) the previous mouse position if there was no
+        // element specified, or (2) the origin of the element from which to
+        // calculate the offset. While it may not be strictly spec-compliant,
+        // attempting to set an offset larger than 2,147,483,647 will be
+        // regarded as outside the move bounds.
+        long long temp_x = static_cast<long long>(end_x) + static_cast<long long>(x_offset);
+        if (temp_x > INT_MAX || temp_x < INT_MIN) {
+          input_state->error_info = StringUtilities::Format(MOVE_OVERFLOW_ERROR_TEMPLATE,
+                                                            "x coordinate",
+                                                            temp_x);
+          return EMOVETARGETOUTOFBOUNDS;
+        }
+        long long temp_y = static_cast<long long>(end_y) + static_cast<long long>(y_offset);
+        if (temp_y > INT_MAX || temp_y < INT_MIN) {
+          input_state->error_info = StringUtilities::Format(MOVE_OVERFLOW_ERROR_TEMPLATE,
+                                                            "y coordinate",
+                                                            temp_y);
+          return EMOVETARGETOUTOFBOUNDS;
+        }
+
         end_x += x_offset;
         end_y += y_offset;
       }
@@ -607,7 +631,10 @@ bool InputManager::IsSingleKey(const std::wstring& input) {
 int InputManager::Pause(BrowserHandle browser_wrapper,
                         const Json::Value& pause_action) {
   int status_code = 0;
-  int duration = pause_action["duration"].asInt();
+  int duration = 0;
+  if (pause_action.isMember("duration")) {
+    duration = pause_action["duration"].asInt();
+  }
   if (duration > 0) {
     this->AddPauseInput(browser_wrapper->GetContentWindowHandle(), duration);
   }

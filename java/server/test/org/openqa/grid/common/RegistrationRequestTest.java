@@ -17,11 +17,15 @@
 
 package org.openqa.grid.common;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.openqa.selenium.json.Json.MAP_TYPE;
+
+import com.beust.jcommander.JCommander;
 
 import org.junit.Assume;
 import org.junit.Test;
@@ -69,7 +73,7 @@ public class RegistrationRequestTest {
 
     String json = new Json().toJson(req.toJson());
 
-    RegistrationRequest req2 = RegistrationRequest.fromJson(json);
+    RegistrationRequest req2 = RegistrationRequest.fromJson(new Json().toType(json, MAP_TYPE));
 
     assertEquals(req.getName(), req2.getName());
     assertEquals(req.getDescription(), req2.getDescription());
@@ -137,13 +141,14 @@ public class RegistrationRequestTest {
     assertEquals("http://example.com:5555", req.getConfiguration().getRemoteHost());
   }
 
-  @Test(expected = GridConfigurationException.class)
+  @Test
   public void validateWithException() {
     GridNodeConfiguration config = parseCliOptions(
         "-role", "node", "-hubHost", "localhost", "-hub", "localhost:4444");
     RegistrationRequest req = new RegistrationRequest(config);
 
-    req.validate();
+    assertThatExceptionOfType(GridConfigurationException.class)
+        .isThrownBy(req::validate);
   }
 
   /**
@@ -377,7 +382,7 @@ public class RegistrationRequestTest {
 
   private GridNodeConfiguration parseCliOptions(String... args) {
     GridNodeCliOptions opts = new GridNodeCliOptions();
-    opts.parse(args);
+    JCommander.newBuilder().addObject(opts).build().parse(args);
     return new GridNodeConfiguration(opts);
   }
 }

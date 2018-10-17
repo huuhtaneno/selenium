@@ -61,6 +61,7 @@ class Element {
 
   int IsDisplayed(bool ignore_opacity, bool* result);
   bool IsEnabled(void);
+  bool IsXmlDocument(IHTMLDocument2* doc);
   bool IsSelected(void);
   bool IsInteractable(void);
   bool IsEditable(void);
@@ -68,6 +69,7 @@ class Element {
   bool IsAttachedToDom(void);
   bool IsDocumentFocused(IHTMLDocument2* focused_doc);
   bool IsObscured(LocationInfo* click_location,
+                  long* obscuring_element_index,
                   std::string* obscuring_element_description);
 
   std::string element_id(void) const { return this->element_id_; }
@@ -94,6 +96,8 @@ class Element {
 
   bool HasFirstChildTextNodeOfMultipleChildren(void);
   bool GetTextBoundaries(LocationInfo* text_info);
+
+  bool GetComputedStyle(IHTMLCSSStyleDeclaration** computed_style);
 
   std::string element_id_;
   CComPtr<IHTMLElement> element_;
